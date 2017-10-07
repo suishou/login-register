@@ -32,37 +32,31 @@ public class RegisterServlet extends HttpServlet {
 		String confirmPassword = request.getParameter("confirmPassword");
 		String email = request.getParameter("email");
 
-		out.println("用户名：" + username);
-		out.println("密码：" + password);
-		out.println("确认密码：" + confirmPassword);
-		out.println("邮箱：" + email);
-
-		if (!password.equals(confirmPassword)) {
-			errorList.add("注册失败：密码与确认密码不符");
-			request.getRequestDispatcher("/ErrorServlet").forward(request,
-					response);
-			return;
-		}
-
 		User user = new User(username, password, email);
-		if (!isValidUser(user, errorList)) {
+		if (!isValidUser(user, confirmPassword, errorList)) {
 			request.getRequestDispatcher("/ErrorServlet").forward(request,
 					response);
 			return;
 		}
+
 		userDB.addUser(user);
+		out.println("用户名：" + username + "<br/>");
+		out.println("密码：" + password + "<br/>");
+		out.println("确认密码：" + confirmPassword + "<br/>");
+		out.println("邮箱：" + email + "<br/>");
 		out.println("注册成功！<br/>");
 		out.println("<a href='" + request.getContextPath()
 				+ "/index.jsp'>返回首页</a>");
 	}
 
-	private boolean isValidUser(User user, List<String> errorList) {
+	private boolean isValidUser(User user, String confirmPassword,
+			List<String> errorList) {
 		if (!isValidUsername(user.getUsername())) {
 			errorList.add("注册失败：用户名为空或已被注册");
 			return false;
 		}
-		if (!isValidPassword(user.getPassword())) {
-			errorList.add("注册失败：密码为空");
+		if (!isValidPassword(user.getPassword(), confirmPassword)) {
+			errorList.add("注册失败：密码为空或与确认密码不相符");
 			return false;
 		}
 		if (!isValidEmail(user.getEmail())) {
@@ -85,15 +79,24 @@ public class RegisterServlet extends HttpServlet {
 		return true;
 	}
 
-	private boolean isValidPassword(String password) {
-		return !password.isEmpty();
+	private boolean isValidPassword(String password, String confirmPassword) {
+		if (password.isEmpty()) {
+			return false;
+		}
+		if (!password.equals(confirmPassword)) {
+			return false;
+		}
+		return true;
 	}
 
 	private boolean isValidEmail(String email) {
 		if (email.isEmpty()) {
 			return false;
 		}
-		return email.matches("^[\\w-]+(\\.[\\w-]+)*@[\\w-]+(\\.[\\w-]+)+$");
+		if (!email.matches("^[\\w-]+(\\.[\\w-]+)*@[\\w-]+(\\.[\\w-]+)+$")) {
+			return false;
+		}
+		return true;
 	}
 
 }
